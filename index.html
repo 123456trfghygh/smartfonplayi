@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#121212">
+    <title>Phone Collector</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+        :root { --bg: #121212; --bg2: #1a1a1a; --bg3: #1e1e1e; --bg4: #2a2a2a; --bd: #333; --tx: #fff; --tx2: #ccc; --tx3: #888; --ac: #4caf50; --ac2: #64b5f6; --dg: #e53935; --gd: #ff9800; }
+        body[data-theme="light"] { --bg: #f0f0f0; --bg2: #fff; --bg3: #fff; --bg4: #e8e8e8; --bd: #ddd; --tx: #222; --tx2: #444; --tx3: #888; }
+        body { background: var(--bg); color: var(--tx); display: flex; flex-direction: column; overflow: hidden; height: 100vh; }
+        
+        #topbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--bg2); border-bottom: 1px solid var(--bd); font-size: 13px; font-weight: bold; flex-shrink: 0; padding-top: calc(10px + env(safe-area-inset-top)); }
+        #topbar .money { color: var(--ac); }
+        #topbar .nick { color: var(--ac2); }
+        
+        #app { flex: 1; overflow-y: auto; padding: 14px; padding-bottom: 90px; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg2); display: flex; justify-content: space-around; padding: 8px 0 calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid var(--bd); z-index: 10; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 9px; color: var(--tx3); background: none; border: none; padding: 0 3px; cursor: pointer; flex: 1; }
+        .nav-item.active { color: var(--ac); }
+        .nav-item .ic { font-size: 18px; margin-bottom: 2px; }
+        
+        h2 { margin-bottom: 14px; font-size: 19px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        h3 { font-size: 15px; margin-bottom: 10px; color: var(--tx2); }
+        
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); gap: 9px; }
+        .card { background: var(--bg3); border-radius: 12px; padding: 9px; text-align: center; border: 2px solid var(--bd); position: relative; cursor: pointer; }
+        .card .rar { position: absolute; top: 5px; left: 5px; font-size: 8px; padding: 2px 5px; border-radius: 4px; color: #fff; font-weight: bold; }
+        .card svg { width: 52px; height: 82px; margin: 14px 0 6px; }
+        .card .nm { font-size: 10px; color: var(--tx2); font-weight: bold; line-height: 1.2; min-height: 24px; }
+        .card .tk { font-size: 7px; color: var(--tx3); margin-top: 3px; word-break: break-all; }
+        .card.locked svg { opacity: .15; }
+        .card.locked .nm { color: var(--tx3); }
+        .card.broken { filter: grayscale(.6); border-color: var(--dg) !important; }
+        
+        .list { display: flex; flex-direction: column; gap: 9px; }
+        .row-item { background: var(--bg3); border-radius: 12px; padding: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--bd); gap: 10px; }
+        .row-item .info { flex: 1; min-width: 0; }
+        .row-item .t1 { font-weight: bold; font-size: 14px; }
+        .row-item .t2 { font-size: 11px; color: var(--tx3); margin-top: 3px; }
+        .row-item .right { text-align: right; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; flex-shrink: 0; }
+        
+        .price { color: var(--ac); font-weight: bold; font-size: 14px; }
+        
+        button { background: var(--ac); color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; }
+        button:active { opacity: .7; }
+        button:disabled { background: var(--tx3); cursor: not-allowed; opacity: .5; }
+        button.sec { background: var(--bg4); color: var(--tx); }
+        button.dg { background: var(--dg); }
+        button.sm { padding: 5px 10px; font-size: 11px; }
+        
+        input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--bd); background: var(--bg4); color: var(--tx); font-size: 14px; outline: none; }
+        .row { display: flex; gap: 8px; margin-top: 8px; }
+        .row input { flex: 1; }
+        
+        .notif { position: fixed; top: 60px; left: 50%; transform: translateX(-50%) translateY(-10px); background: var(--bg4); padding: 11px 20px; border-radius: 8px; font-size: 13px; z-index: 200; opacity: 0; transition: all .3s; pointer-events: none; text-align: center; border: 1px solid var(--bd); }
+        .notif.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,.75); display: flex; align-items: center; justify-content: center; z-index: 300; padding: 16px; opacity: 0; pointer-events: none; transition: opacity .2s; }
+        .modal.show { opacity: 1; pointer-events: auto; }
+        .modal-content { background: var(--bg2); border-radius: 16px; padding: 18px; max-width: 420px; width: 100%; max-height: 85vh; overflow-y: auto; }
+        .modal-content h3 { margin-bottom: 12px; }
+        .actions { display: flex; gap: 10px; margin-top: 16px; }
+        .actions button { flex: 1; }
+        
+        .sec-block { background: var(--bg3); border-radius: 12px; padding: 14px; margin-bottom: 12px; border: 1px solid var(--bd); }
+        .sec-block label { display: block; font-size: 12px; color: var(--tx3); margin-bottom: 8px; }
+        .token-big { font-family: monospace; font-size: 15px; color: var(--ac); background: var(--bg); padding: 14px; border-radius: 8px; text-align: center; font-weight: bold; word-break: break-all; }
+        
+        .tabs { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 2px; }
+        .tabs button { background: var(--bg3); color: var(--tx2); font-size: 12px; padding: 7px 14px; white-space: nowrap; border: 1px solid var(--bd); }
+        .tabs button.active { background: var(--ac); color: #fff; border-color: var(--ac); }
+        
+        .progress { height: 5px; background: var(--bg4); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+        .progress > div { height: 100%; background: var(--ac); }
+        .empty { color: var(--tx3); text-align: center; padding: 40px 20px; grid-column: 1/-1; font-size: 13px; }
+
+        /* Анимации кейса */
+        .roulette-wrap { position: relative; overflow: hidden; padding: 20px 0; margin: 10px 0; }
+        .roulette { display: flex; gap: 8px; transition: transform 4s cubic-bezier(.2,.9,.3,1); }
+        .roulette .rcard { flex-shrink: 0; width: 100px; background: var(--bg3); border-radius: 10px; padding: 8px; text-align: center; border: 2px solid var(--bd); }
+        .roulette .rcard svg { width: 48px; height: 74px; }
+        .roulette .rcard .nm { font-size: 9px; color: var(--tx2); margin-top: 4px; min-height: 22px; }
+        .roulette-wrap::before, .roulette-wrap::after { content: ''; position: absolute; top: 0; bottom: 0; width: 40px; z-index: 2; pointer-events: none; }
+        .roulette-wrap::before { left: 0; background: linear-gradient(90deg, var(--bg2), transparent); }
+        .roulette-wrap::after { right: 0; background: linear-gradient(-90deg, var(--bg2), transparent); }
+        .roulette-center { position: absolute; top: 0; bottom: 0; left: 50%; transform: translateX(-50%); width: 2px; background: var(--gd); z-index: 3; pointer-events: none; box-shadow: 0 0 8px var(--gd); }
+
+        /* Анимации ремонта */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes insertScrewAnim { 0% { transform: rotate(-720deg) scale(0); opacity: 0; } 100% { transform: rotate(0deg) scale(1); opacity: 1; } }
+        .screw-inserting { animation: insertScrewAnim 0.4s forwards; }
+    </style>
+</head>
+<body data-theme="dark">
+
+    <div id="app">
+        <h1 style="color:#4caf50; text-align:center; margin-top:50px;">Загрузка игры...</h1>
+    </div>
+
+    <div id="topbar">
+        <span class="money">💰 <span id="money-display">0</span> $</span>
+        <span class="nick">👤 <span id="nick-display">Игрок</span></span>
+    </div>
+    <nav class="bottom-nav" id="nav"></nav>
+    <div class="notif" id="notif"></div>
+    <div class="modal" id="modal"><div class="modal-content" id="modal-body"></div></div>
+
+    <script>
+        'use strict';
+
+        // ==========================================
+        // 1. ГЛОБАЛЬНЫЙ ПЕРЕХВАТЧИК ОШИБОК
+        // ==========================================
+        window.onerror = function(msg, url, line, col, error) {
+            const app = document.getElementById('app');
+            if (app) {
+                app.innerHTML = `
+                    <div style="padding:20px;background:#ffebee;color:#b71c1c;border-radius:12px;margin-top:20px;border:2px solid #e53935">
+                        <h3 style="margin-bottom:10px">⚠️ Ошибка в коде</h3>
+                        <p style="font-size:13px;margin-bottom:10px">${msg}</p>
+                        <p style="font-size:10px;color:#666;margin-bottom:15px">Строка: ${line}</p>
+                        <button onclick="localStorage.clear(); location.reload();" style="background:#b71c1c;color:#fff;padding:10px 20px;border:none;border-radius:8px;font-weight:bold;">Сбросить сохранения и перезагрузить</button>
+                    </div>
+                `;
+            }
+            return false;
+        };
+
+        // ==========================================
+        // 2. БАЗА ДАННЫХ
+        // ==========================================
+        const BRANDS_DATA = {
+            'Vivo': ['Y27', 'Y36', 'V29', 'X90', 'X100 Pro'],
+            'Samsung': ['Galaxy A05', 'Galaxy A54', 'Galaxy S23', 'Galaxy Z Flip 5', 'Galaxy S24 Ultra'],
+            'Apple': ['iPhone SE', 'iPhone 13', 'iPhone 14', 'iPhone 15', 'iPhone 15 Pro Max'],
+            'Poco': ['Poco C65', 'Poco M6 Pro', 'Poco X6 Pro', 'Poco F5', 'Poco F6 Pro'],
+            'Oppo': ['Oppo A58', 'Oppo A78', 'Oppo Reno 11', 'Oppo Find X7', 'Oppo Find N3'],
+            'OnePlus': ['Nord CE 3 Lite', 'Nord 3', 'OnePlus 11', 'OnePlus 12', 'OnePlus Open'],
+            'Xiaomi': ['Redmi 13C', 'Redmi Note 13 Pro', 'Xiaomi 13T Pro', 'Xiaomi 14', 'Xiaomi 14 Ultra'],
+            'Realme': ['Realme C67', 'Realme Narzo 60', 'Realme 11', 'Realme 12 Pro+', 'Realme GT 5 Pro'],
+            'Honor': ['Honor X9b', 'Honor 70', 'Honor 90', 'Honor Magic 6 Pro', 'Honor Magic V2'],
+            'Huawei': ['Huawei Nova 11', 'Huawei P60', 'Huawei P60 Pro', 'Huawei Mate 60 Pro', 'Huawei Mate X3'],
+            'Google': ['Pixel 6a', 'Pixel 7a', 'Pixel 8', 'Pixel 8 Pro', 'Pixel Fold'],
+            'Nothing': ['CMF Phone 1', 'Nothing Phone (1)', 'Nothing Phone (2a)', 'Phone (2a) Plus', 'Nothing Phone (2)'],
+            'Motorola': ['Moto G54', 'Moto G84', 'Moto Edge 40', 'Moto Edge 40 Pro', 'Moto Razr 40 Ultra'],
+            'Nokia': ['Nokia C32', 'Nokia G22', 'Nokia G42', 'Nokia X30', 'Nokia XR21'],
+            'Sony': ['Xperia 10 V', 'Xperia 10 IV', 'Xperia 5 V', 'Xperia 1 IV', 'Xperia 1 V'],
+            'Asus': ['Zenfone 9', 'Zenfone 10', 'ROG Phone 6', 'ROG Phone 7', 'ROG Phone 8'],
+            'ZTE': ['Blade A73', 'Blade V50', 'Nubia Z50', 'Axon 40', 'Axon 50 Ultra'],
+            'Infinix': ['Infinix Smart 8', 'Infinix Hot 40', 'Infinix Note 30 Pro', 'Infinix GT 10 Pro', 'Infinix Zero 30'],
+            'Tecno': ['Tecno Spark 10', 'Tecno Pova 5', 'Tecno Camon 20', 'Tecno Camon 20 Pro', 'Tecno Phantom X2'],
+            'Meizu': ['Meizu 18 Pro', 'Meizu 20', 'Meizu 20 Infinity', 'Meizu 21', 'Meizu 21 Pro']
+        };
+
+        const RARITIES = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
+        const RINFO = {
+            common: { label: 'Обычный', color: '#888', minVal: 100, maxVal: 300 },
+            uncommon: { label: 'Необычный', color: '#4caf50', minVal: 300, maxVal: 600 },
+            rare: { label: 'Редкий', color: '#2196f3', minVal: 600, maxVal: 1200 },
+            epic: { label: 'Эпический', color: '#9c27b0', minVal: 1200, maxVal: 2500 },
+            legendary: { label: 'Легендарный', color: '#ff9800', minVal: 2500, maxVal: 5000 }
+        };
+
+        let ALL_PHONES = [];
+
+        // ==========================================
+        // 3. СОСТОЯНИЕ
+        // ==========================================
+        const STORAGE_KEY = 'phoneCollector_v11';
+        const DEFAULT_STATE = {
+            money: 3000,
+            myPhones: [],
+            myToken: null,
+            nickname: 'Игрок',
+            shopItems: [],
+            shopExpiresAt: 0,
+            stats: { casesOpened: 0, phonesSold: 0, phonesCrafted: 0, exchanges: 0, repairsDone: 0 },
+            history: [],
+            settings: { muted: false, theme: 'dark' },
+            repairOrders: [],
+            collectionSeen: {}
+        };
+
+        let state = { ...DEFAULT_STATE };
+
+        function loadState() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+                if (saved) state = { ...DEFAULT_STATE, ...saved };
+            } catch (e) {}
+            
+            if (!state.settings) state.settings = { muted: false, theme: 'dark' };
+            if (!state.stats) state.stats = { casesOpened: 0, phonesSold: 0, phonesCrafted: 0, exchanges: 0, repairsDone: 0 };
+            if (!Array.isArray(state.myPhones)) state.myPhones = [];
+            if (!Array.isArray(state.shopItems)) state.shopItems = [];
+            if (!Array.isArray(state.history)) state.history = [];
+            if (!Array.isArray(state.repairOrders)) state.repairOrders = [];
+            if (!state.collectionSeen) state.collectionSeen = {};
+            
+            if (!state.myToken) {
+                state.myToken = 'USR-' + Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+            }
+        }
+
+        function save() {
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+            render();
+        }
+
+        function pushHistory(text) {
+            state.history.unshift({ text, ts: Date.now() });
+            if (state.history.length > 50) state.history.length = 50;
+        }
+
+        // ==========================================
+        // 4. УТИЛИТЫ
+        // ==========================================
+        function fmt(n) { return (Number(n) || 0).toLocaleString('ru-RU'); }
+        
+        function notify(msg) {
+            const el = document.getElementById('notif');
+            if (!el) return;
+            el.textContent = msg;
+            el.classList.add('show');
+            clearTimeout(el.timer);
+            el.timer = setTimeout(() => el.classList.remove('show'), 2500);
+        }
+        
+        function escapeHtml(str) {
+            return String(str || '').replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+            });
+        }
+
+        function phoneSVG(p) {
+            const color = RINFO[p.rarity] ? RINFO[p.rarity].color : '#888';
+            return `
+                <svg viewBox="0 0 100 160" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="8" y="8" width="84" height="144" rx="14" fill="${p.color || '#333'}" stroke="${color}" stroke-width="2.5"/>
+                    <rect x="16" y="24" width="68" height="112" rx="5" fill="#0a0a0a"/>
+                    <circle cx="50" cy="146" r="4" fill="#222"/>
+                    <rect x="58" y="14" width="18" height="22" rx="4" fill="#1a1a1a" stroke="#333"/>
+                    <circle cx="64" cy="21" r="3" fill="#444"/>
+                    <circle cx="70" cy="21" r="3" fill="#444"/>
+                </svg>
+            `;
+        }
+
+        function phoneCard(p, locked) {
+            if (locked) return `<div class="card locked">${phoneSVG({ ...p, color: '#111' })}<div class="nm">???</div></div>`;
+            const info = RINFO[p.rarity] || RINFO.common;
+            const brokenClass = p.broken ? ' broken' : '';
+            return `
+                <div class="card${brokenClass}" style="border-color:${info.color}" onclick="showPhoneDetail('${p.id}')">
+                    <div class="rar" style="background:${info.color}">${info.label}</div>
+                    ${phoneSVG(p)}
+                    <div class="nm">${escapeHtml(p.name)}</div>
+                    <div class="tk">${p.token}</div>
+                </div>
+            `;
+        }
+
+        function genPhoneToken(brand) {
+            return brand.substring(0, 3).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+        }
+
+        // ==========================================
+        // 5. ГЕНЕРАЦИЯ ДАННЫХ
+        // ==========================================
+        function generateAllPhones() {
+            ALL_PHONES = [];
+            let id = 1;
+            for (const brand in BRANDS_DATA) {
+                BRANDS_DATA[brand].forEach((model, idx) => {
+                    const rarity = RARITIES[idx];
+                    const info = RINFO[rarity];
+                    const name = model.startsWith(brand) || model.includes(brand) ? model : brand + ' ' + model;
+                    ALL_PHONES.push({
+                        id: id++, brand, model, name, rarity,
+                        value: Math.floor(info.minVal + Math.random() * (info.maxVal - info.minVal)),
+                        color: ['#2a2a2a', '#333', '#4a4a4a', '#555'][Math.floor(Math.random() * 4)]
+                    });
+                });
+            }
+        }
+
+        function generateRepairOrders() {
+            state.repairOrders = [];
+            for (let i = 0; i < 3; i++) {
+                const base = ALL_PHONES[Math.floor(Math.random() * ALL_PHONES.length)];
+                state.repairOrders.push({
+                    id: 'order_' + Date.now() + '_' + i,
+                    phone: { ...base, token: genPhoneToken(base.brand) },
+                    clientName: 'Клиент ' + Math.floor(Math.random() * 100),
+                    reward: 10
+                });
+            }
+        }
+
+        // ==========================================
+        // 6. НАВИГАЦИЯ
+        // ==========================================
+        let currentScreen = 'phones';
+
+        function switchScreen(id) {
+            currentScreen = id;
+            render();
+        }
+
+        function render() {
+            try {
+                document.body.setAttribute('data-theme', state.settings.theme);
+                document.getElementById('money-display').textContent = fmt(state.money);
+                document.getElementById('nick-display').textContent = state.nickname;
+
+                const app = document.getElementById('app');
+                const nav = document.getElementById('nav');
+
+                if (currentScreen === 'phones') app.innerHTML = renderPhonesScreen();
+                else if (currentScreen === 'cases') app.innerHTML = renderCasesScreen();
+                else if (currentScreen === 'shop') app.innerHTML = renderShopScreen();
+                else if (currentScreen === 'repair') app.innerHTML = renderRepairScreen();
+                else if (currentScreen === 'exchange') app.innerHTML = renderExchangeScreen();
+                else if (currentScreen === 'collection') app.innerHTML = renderCollectionScreen();
+                else if (currentScreen === 'profile') app.innerHTML = renderProfileScreen();
+
+                const menu = [
+                    { id: 'phones', icon: '📱', name: 'Смартфоны' },
+                    { id: 'cases', icon: '📦', name: 'Кейсы' },
+                    { id: 'shop', icon: '🛒', name: 'Магазин' },
+                    { id: 'repair', icon: '🔧', name: 'Починка' },
+                    { id: 'exchange', icon: '🔄', name: 'Обмен' },
+                    { id: 'collection', icon: '🗂️', name: 'Коллекция' },
+                    { id: 'profile', icon: '👤', name: 'Профиль' }
+                ];
+
+                nav.innerHTML = menu.map(item => `
+                    <button class="nav-item ${item.id === currentScreen ? 'active' : ''}" onclick="switchScreen('${item.id}')">
+                        <span class="ic">${item.icon}</span>${item.name}
+                    </button>
+                `).join('');
+
+            } catch (e) {
+                console.error(e);
+                document.getElementById('app').innerHTML = `<h3 style="color:red">Ошибка отрисовки: ${e.message}</h3>`;
+            }
+        }
+
+        // ==========================================
+        // 7. ЭКРАНЫ
+        // ==========================================
+        function renderPhonesScreen() {
+            let html = `<h2>📱 Мои смартфоны (${state.myPhones.length})</h2>`;
+            if (state.myPhones.length === 0) {
+                html += '<p class="empty">Пусто. Открой кейс или купи в магазине!</p>';
+            } else {
+                html += '<div class="grid">' + state.myPhones.map(p => phoneCard(p, false)).join('') + '</div>';
+            }
+            return html;
+        }
+
+        function renderCasesScreen() {
+            const CASES = [
+                { id: 1, name: 'Базовый кейс', price: 50, rarity: 'common', icon: '📦' },
+                { id: 2, name: 'Средний кейс', price: 300, rarity: 'uncommon', icon: '🎁' },
+                { id: 3, name: 'Продвинутый кейс', price: 350, rarity: 'rare', icon: '💎' },
+                { id: 4, name: 'Премиум кейс', price: 1000, rarity: 'epic', icon: '👑' },
+                { id: 5, name: 'Элитный кейс', price: 2500, rarity: 'legendary', icon: '🔥' }
+            ];
+
+            let html = '<h2>📦 Кейсы</h2><div class="list">';
+            CASES.forEach(c => {
+                const info = RINFO[c.rarity];
+                html += `
+                    <div class="row-item" style="border-color:${info.color}">
+                        <div class="info">
+                            <div class="t1">${c.icon} ${c.name}</div>
+                            <div class="t2">${info.label}</div>
+                        </div>
+                        <div class="right">
+                            <div class="price">${c.price} $</div>
+                            <button onclick="startCaseRoulette(${c.id})">Открыть</button>
+                        </div>
+                    </div>
+                `;
+            });
+            return html + '</div>';
+        }
+
+        function renderShopScreen() {
+            let html = '<h2>🛒 Магазин</h2><div class="list">';
+            if (state.shopItems.length === 0) {
+                html += '<p class="empty">Магазин пуст...</p>';
+            } else {
+                state.shopItems.forEach((item, idx) => {
+                    const info = RINFO[item.rarity];
+                    html += `
+                        <div class="row-item">
+                            <div class="info">
+                                <div class="t1" style="color:${info.color}">${escapeHtml(item.name)}</div>
+                                <div class="t2">${info.label}</div>
+                            </div>
+                            <div class="right">
+                                <div class="price">${fmt(item.shopPrice)} $</div>
+                                <button onclick="buyPhone(${idx})">Купить</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            return html + '</div>';
+        }
+
+        function renderRepairScreen() {
+            let html = '<h2>🔧 Починка</h2>';
+            html += '<div class="tabs"><button class="active">📋 Заказы</button></div>';
+            html += '<div class="list">';
+            if (state.repairOrders.length === 0) generateRepairOrders();
+            
+            state.repairOrders.forEach((order, idx) => {
+                const info = RINFO[order.phone.rarity];
+                html += `
+                    <div class="row-item">
+                        <div class="info">
+                            <div class="t1" style="color:${info.color}">${escapeHtml(order.phone.name)}</div>
+                            <div class="t2">Награда: +${order.reward} $</div>
+                        </div>
+                        <div class="right">
+                            <button onclick="startRepair(${idx})">Починить</button>
+                        </div>
+                    </div>
+                `;
+            });
+            return html + '</div>';
+        }
+
+        function renderExchangeScreen() {
+            return `
+                <h2>🔄 Обмен</h2>
+                <div class="sec-block">
+                    <label>Мой токен для обмена</label>
+                    <div class="token-big">${state.myToken}</div>
+                    <p style="font-size:11px;color:var(--tx3);margin-top:10px;text-align:center">Передайте токен другу, чтобы он мог отправить вам запрос на обмен.</p>
+                </div>
+            `;
+        }
+
+        function renderCollectionScreen() {
+            let html = '<h2>🗂️ Коллекция</h2>';
+            const byBrand = {};
+            ALL_PHONES.forEach(p => {
+                if (!byBrand[p.brand]) byBrand[p.brand] = [];
+                byBrand[p.brand].push(p);
+            });
+
+            for (const brand in byBrand) {
+                html += `<div class="sec-block"><h3>${brand}</h3><div class="grid">`;
+                byBrand[brand].forEach(p => {
+                    const owned = state.myPhones.some(myP => myP.brand === p.brand && myP.model === p.model);
+                    html += phoneCard(p, !owned);
+                });
+                html += '</div></div>';
+            }
+            return html;
+        }
+
+        function renderProfileScreen() {
+            return `
+                <h2>👤 Профиль</h2>
+                
+                <div class="sec-block">
+                    <label>Мой токен</label>
+                    <div class="token-big">${state.myToken}</div>
+                </div>
+
+                <div class="sec-block">
+                    <label>Никнейм</label>
+                    <div class="row">
+                        <input id="nick-input" value="${escapeHtml(state.nickname)}">
+                        <button onclick="saveNickname()">OK</button>
+                    </div>
+                </div>
+
+                <div class="sec-block">
+                    <b style="display:block;margin-bottom:10px">🏆 Статистика</b>
+                    <div style="font-size:12px;color:var(--tx2);line-height:1.8">
+                        <div>Открыто кейсов: <b>${state.stats.casesOpened}</b></div>
+                        <div>Починено телефонов: <b>${state.stats.repairsDone}</b></div>
+                        <div>Продано телефонов: <b>${state.stats.phonesSold}</b></div>
+                    </div>
+                </div>
+
+                <div class="sec-block">
+                    <b style="display:block;margin-bottom:10px">⚙️ Настройки</b>
+                    <div class="row">
+                        <button class="sec sm" onclick="toggleTheme()">Сменить тему</button>
+                        <button class="dg sm" onclick="resetGame()">Сбросить прогресс</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==========================================
+        // 8. ДЕЙСТВИЯ
+        // ==========================================
+        function showModal(html) {
+            document.getElementById('modal-body').innerHTML = html;
+            document.getElementById('modal').classList.add('show');
+        }
+        function closeModal() { document.getElementById('modal').classList.remove('show'); }
+
+        function startCaseRoulette(id) {
+            const CASES = {
+                1: { price: 50, rarity: 'common', name: 'Базовый' },
+                2: { price: 300, rarity: 'uncommon', name: 'Средний' },
+                3: { price: 350, rarity: 'rare', name: 'Продвинутый' },
+                4: { price: 1000, rarity: 'epic', name: 'Премиум' },
+                5: { price: 2500, rarity: 'legendary', name: 'Элитный' }
+            };
+            const c = CASES[id];
+            if (state.money < c.price) return notify('Мало денег!');
+
+            const pool = ALL_PHONES.filter(p => p.rarity === c.rarity);
+            const winner = pool[Math.floor(Math.random() * pool.length)];
+            
+            // Генерируем ленту
+            const WINNER_POS = 30;
+            let rollHtml = '<div class="roulette-wrap"><div class="roulette-center"></div><div class="roulette" id="roulette">';
+            for (let i = 0; i < 40; i++) {
+                let item = (i === WINNER_POS) ? winner : pool[Math.floor(Math.random() * pool.length)];
+                let isW = (i === WINNER_POS);
+                let border = isW ? `border-color:${RINFO[c.rarity].color}; box-shadow:0 0 12px ${RINFO[c.rarity].color}` : `border-color:var(--bd)`;
+                rollHtml += `<div class="rcard" style="${border}">${phoneSVG(item)}<div class="nm">${escapeHtml(item.name)}</div></div>`;
+            }
+            rollHtml += '</div></div>';
+
+            showModal(`
+                <h3 style="text-align:center;">Открытие кейса</h3>
+                ${rollHtml}
+                <div id="roll-result" style="text-align:center; min-height:60px;"></div>
+            `);
+
+            // Анимация
+            setTimeout(() => {
+                const rollEl = document.getElementById('roulette');
+                if (!rollEl) return;
+                const cardW = 108;
+                const wrapW = document.querySelector('.roulette-wrap').offsetWidth;
+                const targetX = -(WINNER_POS * cardW) + (wrapW / 2 - cardW / 2);
+                rollEl.style.transform = `translateX(${targetX}px)`;
+            }, 100);
+
+            // Результат
+            setTimeout(() => {
+                state.money -= c.price;
+                state.stats.casesOpened++;
+                const isBroken = (c.rarity === 'common' && Math.random() < 0.3);
+                state.myPhones.push({ ...winner, id: 'own_' + Date.now(), token: genPhoneToken(winner.brand), broken: isBroken });
+                pushHistory(`Открыт ${c.name} кейс → ${winner.name}`);
+                save();
+
+                const resEl = document.getElementById('roll-result');
+                if (resEl) {
+                    resEl.innerHTML = `
+                        <div style="font-size:16px;font-weight:bold;color:${RINFO[winner.rarity].color};margin-bottom:4px">${escapeHtml(winner.name)}</div>
+                        ${isBroken ? '<div style="font-size:12px;color:var(--dg);margin-bottom:12px">⚠️ Телефон сломан!</div>' : '<div style="margin-bottom:12px"></div>'}
+                        <button onclick="closeModal(); save();" style="width:100%">Забрать</button>
+                    `;
+                }
+            }, 4300);
+        }
+
+        function buyPhone(idx) {
+            const item = state.shopItems[idx];
+            if (state.money < item.shopPrice) return notify('Мало денег!');
+            state.money -= item.shopPrice;
+            const isBroken = Math.random() < 0.25;
+            state.myPhones.push({ ...item, id: 'own_' + Date.now(), broken: isBroken });
+            state.shopItems.splice(idx, 1);
+            pushHistory(`Куплен ${item.name} за ${item.shopPrice}$`);
+            save();
+            notify(`Куплено: ${item.name}`);
+        }
+
+        function saveNickname() {
+            const val = document.getElementById('nick-input').value.trim();
+            if (val) { state.nickname = val; save(); notify('Сохранено'); }
+        }
+
+        function showPhoneDetail(id) {
+            const p = state.myPhones.find(x => String(x.id) === String(id));
+            if (!p) return;
+            const info = RINFO[p.rarity];
+            
+            let actions = '';
+            if (p.broken) {
+                actions = `<button onclick="closeModal(); startRepairPhone('${p.id}')" style="width:100%">🔧 Починить</button>`;
+            } else {
+                actions = `
+                    <button class="dg" onclick="sellPhone('${p.id}')" style="width:100%">💰 Продать за ${Math.floor(p.value * 0.8)} $</button>
+                    <button onclick="closeModal(); showPhoneInterface('${escapeHtml(p.name)}')" style="width:100%">📱 Зайти в телефон</button>
+                `;
+            }
+
+            showModal(`
+                <h3 style="text-align:center;color:${info.color}">${escapeHtml(p.name)}</h3>
+                <div style="text-align:center;padding:20px 0;">${phoneSVG(p)}</div>
+                <p style="text-align:center;font-size:12px;color:var(--tx3);margin-bottom:20px;">Токен: ${p.token}</p>
+                <div class="actions" style="flex-direction:column">
+                    ${actions}
+                    <button class="sec" onclick="closeModal()">Закрыть</button>
+                </div>
+            `);
+        }
+
+        function sellPhone(id) {
+            const idx = state.myPhones.findIndex(x => String(x.id) === String(id));
+            if (idx === -1) return;
+            const p = state.myPhones[idx];
+            state.money += Math.floor(p.value * 0.8);
+            state.stats.phonesSold++;
+            state.myPhones.splice(idx, 1);
+            closeModal(); save();
+            notify('Продано!');
+        }
+
+        function toggleTheme() {
+            state.settings.theme = state.settings.theme === 'dark' ? 'light' : 'dark';
+            save();
+        }
+
+        function resetGame() {
+            if (confirm('Удалить весь прогресс?')) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        // ==========================================
+        // 9. РЕМОНТ (С АНИМАЦИЕЙ)
+        // ==========================================
+        let repairCtx = null;
+
+        function startRepair(idx) {
+            const order = state.repairOrders[idx];
+            if (!order) return;
+            startRepairPhone(order.phone.id, idx);
+        }
+
+        function startRepairPhone(phoneId, orderIdx = null) {
+            let phone;
+            if (orderIdx !== null) {
+                phone = state.repairOrders[orderIdx].phone;
+            } else {
+                phone = state.myPhones.find(p => String(p.id) === String(phoneId));
+            }
+            if (!phone) return;
+
+            repairCtx = {
+                phone,
+                orderIdx,
+                screws: [true, true, true, true],
+                coverLifted: false,
+                brokenRemoved: false,
+                newInstalled: false,
+                screenOn: false,
+                animScrew: null
+            };
+
+            updateRepairModal();
+        }
+
+        function updateRepairModal() {
+            const ctx = repairCtx;
+            if (!ctx) return;
+
+            let btn = '';
+            let inst = '';
+
+            if (ctx.screws.includes(true)) {
+                inst = 'Открутите винты (нажмите на них)';
+                if (!ctx.screws.includes(true)) btn = `<button onclick="repairLift()" style="width:100%">🪛 Снять крышку</button>`;
+            } else if (!ctx.coverLifted) {
+                btn = `<button onclick="repairLift()" style="width:100%">🪛 Снять крышку</button>`;
+            } else if (!ctx.brokenRemoved) {
+                inst = 'Снимите сломанную деталь';
+                btn = `<button onclick="repairRemove()" style="width:100%">🔍 Снять</button>`;
+            } else if (!ctx.newInstalled) {
+                inst = 'Установите новую деталь';
+                btn = `<button onclick="repairInstall()" style="width:100%">🔧 Установить</button>`;
+            } else if (!ctx.screws.every(x => !x)) {
+                btn = `<button onclick="repairAssemble()" style="width:100%">🔩 Собрать</button>`;
+            } else if (!ctx.screenOn) {
+                btn = `<button onclick="repairPower()" style="width:100%">🔌 Включить</button>`;
+            }
+
+            // Отрисовка SVG
+            let svg = `<svg id="repair-svg" viewBox="0 0 300 500" style="width:100%; max-width:260px; display:block; margin:0 auto;">`;
+            
+            // Внутренности
+            svg += `<g style="opacity:${ctx.coverLifted ? 1 : 0}; transition:opacity 0.5s;">`;
+            svg += `<rect x="50" y="50" width="200" height="400" rx="25" fill="#2a2a2a"/>`;
+            svg += `<rect x="70" y="80" width="160" height="240" rx="8" fill="#141414" stroke="#333"/>`;
+            
+            // Батарея
+            const showBat = !(ctx.brokenRemoved && !ctx.newInstalled);
+            const glow = (!ctx.brokenRemoved || ctx.newInstalled) ? 'none' : 'drop-shadow(0 0 8px red)';
+            svg += `<g style="opacity:${showBat ? 1 : 0}; transition:opacity 0.3s;">`;
+            svg += `<rect x="80" y="200" width="140" height="100" rx="8" fill="#1e3a1e" stroke="#4caf50" stroke-width="1.5" style="filter:${glow}"/>`;
+            svg += `<text x="150" y="255" text-anchor="middle" fill="#4caf50" font-size="11" font-weight="bold">BATTERY</text></g>`;
+            svg += `</g>`;
+
+            // Крышка
+            const coverY = ctx.coverLifted ? -520 : 0;
+            svg += `<g style="transform:translateY(${coverY}px); transition:transform 0.8s;">`;
+            svg += `<rect x="50" y="50" width="200" height="400" rx="25" fill="${ctx.phone.color || '#444'}"/>`;
+            svg += `<rect x="80" y="80" width="70" height="70" rx="6" fill="#1a1a1a"/>`;
+            
+            // Винты на крышке
+            const screwPos = [{x:72, y:72}, {x:228, y:72}, {x:72, y:428}, {x:228, y:428}];
+            screwPos.forEach((pos, i) => {
+                if (ctx.screws[i]) {
+                    const anim = (ctx.animScrew === i) ? 'screw-inserting' : '';
+                    svg += `
+                        <g transform="translate(${pos.x},${pos.y})">
+                            <g class="${anim}" onclick="repairUnscrew(${i})" style="cursor:pointer">
+                                <circle r="9" fill="#555" stroke="#333" stroke-width="1.5"/>
+                                <circle r="5" fill="#666"/>
+                                <line x1="-5" y1="0" x2="5" y2="0" stroke="#222" stroke-width="2.5"/>
+                                <line x1="0" y1="-5" x2="0" y2="5" stroke="#222" stroke-width="2.5"/>
+                            </g>
+                        </g>
+                    `;
+                }
+            });
+            svg += `</g>`;
+
+            // Экран при включении
+            if (ctx.screenOn) {
+                svg += `<rect x="50" y="50" width="200" height="400" rx="25" fill="#000" style="animation:fadeIn 0.4s forwards;"/>`;
+                svg += `<rect x="55" y="55" width="190" height="390" rx="21" fill="#0a2a0a" style="animation:fadeIn 0.4s forwards;"/>`;
+                svg += `<text x="150" y="245" text-anchor="middle" fill="#4caf50" font-size="40" font-weight="bold" style="animation:fadeIn 0.4s forwards;">✓</text>`;
+            }
+            svg += `</svg>`;
+
+            showModal(`
+                <h3 style="text-align:center">🔧 ${escapeHtml(ctx.phone.name)}</h3>
+                <div style="background:var(--bg); border-radius:12px; padding:10px; margin:10px 0;">${svg}</div>
+                <div style="text-align:center; font-size:13px; color:var(--tx2); margin-bottom:12px;">${inst}</div>
+                <div id="repair-actions">${btn}</div>
+            `);
+        }
+
+        window.repairUnscrew = function(i) {
+            if (!repairCtx || !repairCtx.screws[i]) return;
+            repairCtx.screws[i] = false;
+            updateRepairModal();
+        };
+
+        window.repairLift = function() {
+            if (!repairCtx) return;
+            repairCtx.coverLifted = true;
+            updateRepairModal();
+        };
+
+        window.repairRemove = function() {
+            if (!repairCtx) return;
+            repairCtx.brokenRemoved = true;
+            updateRepairModal();
+        };
+
+        window.repairInstall = function() {
+            if (!repairCtx) return;
+            repairCtx.newInstalled = true;
+            updateRepairModal();
+        };
+
+        window.repairAssemble = function() {
+            if (!repairCtx) return;
+            // Анимация закручивания
+            let i = 0;
+            const nextScrew = () => {
+                if (i >= 4) {
+                    repairCtx.animScrew = null;
+                    updateRepairModal();
+                    return;
+                }
+                repairCtx.screws[i] = true;
+                repairCtx.animScrew = i;
+                updateRepairModal();
+                i++;
+                setTimeout(nextScrew, 400);
+            };
+            nextScrew();
+        };
+
+        window.repairPower = function() {
+            if (!repairCtx) return;
+            repairCtx.screenOn = true;
+            updateRepairModal();
+            
+            setTimeout(() => {
+                const ctx = repairCtx;
+                if (ctx.orderIdx !== null) {
+                    state.repairOrders.splice(ctx.orderIdx, 1);
+                    state.money += 10;
+                    state.stats.repairsDone++;
+                    if (state.repairOrders.length === 0) generateRepairOrders();
+                } else {
+                    const p = state.myPhones.find(x => x.id === ctx.phone.id);
+                    if (p) { p.broken = false; state.money += 10; state.stats.repairsDone++; }
+                }
+                save();
+                closeModal();
+                notify('✅ Починено! +10 $');
+                repairCtx = null;
+            }, 1500);
+        };
+
+        // ==========================================
+        // 10. ИНТЕРФЕЙС ТЕЛЕФОНА
+        // ==========================================
+        function showPhoneInterface(phoneName) {
+            const time = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            const apps = [
+                { id: 'cam', icon: '📷', name: 'Камера' },
+                { id: 'gal', icon: '🖼️', name: 'Галерея' },
+                { id: 'set', icon: '⚙️', name: 'Настройки' }
+            ];
+            
+            const appsHtml = apps.map(a => `
+                <div onclick="notify('${a.name} открыто')" style="background:rgba(255,255,255,.15); border-radius:14px; padding:15px 8px; text-align:center; cursor:pointer;">
+                    <div style="font-size:24px;">${a.icon}</div>
+                    <div style="font-size:10px; margin-top:6px;">${a.name}</div>
+                </div>
+            `).join('');
+
+            showModal(`
+                <div style="background:linear-gradient(135deg,#1a237e,#4a148c); border-radius:20px; padding:16px; min-height:460px; color:#fff;">
+                    <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:16px;">
+                        <span>${time}</span><span>📶 🔋100%</span>
+                    </div>
+                    <div style="text-align:center; margin-bottom:20px; font-size:12px; opacity:.8;">${escapeHtml(phoneName)}</div>
+                    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px;">${appsHtml}</div>
+                    <div style="text-align:center; margin-top:30px;">
+                        <button onclick="closeModal()" style="background:rgba(255,255,255,.2); color:#fff; border-radius:20px; padding:10px 30px;">Выход</button>
+                    </div>
+                </div>
+            `);
+        }
+
+        // ==========================================
+        // 11. ЗАПУСК
+        // ==========================================
+        function init() {
+            loadState();
+            generateAllPhones();
+            
+            if (state.shopItems.length === 0) {
+                for (let i = 0; i < 10; i++) {
+                    const base = ALL_PHONES[Math.floor(Math.random() * ALL_PHONES.length)];
+                    state.shopItems.push({ ...base, id: 'shop_' + Date.now() + i, token: genPhoneToken(base.brand), shopPrice: base.value + 100 });
+                }
+            }
+            if (state.repairOrders.length === 0) generateRepairOrders();
+            
+            render();
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
